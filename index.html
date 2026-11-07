@@ -1,0 +1,1735 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Finanças Pro | Controle Financeiro Pessoal</title>
+    <meta name="description" content="Aplicação completa de Controle Financeiro Pessoal com projeção de parcelas, gastos fixos e variáveis, integrada ao Firebase." />
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#ecfdf5',
+                100: '#d1fae5',
+                200: '#a7f3d0',
+                500: '#10b981',
+                600: '#059669',
+                700: '#047857',
+                800: '#065f46',
+                900: '#064e3b'
+              }
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+      }
+      .modal-backdrop {
+        backdrop-filter: blur(6px);
+      }
+      .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4"></div>
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="flex-1 flex flex-col">
+      <!-- Loading State Inicial -->
+      <div id="initialLoader" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
+        <p class="text-slate-400 font-medium">Iniciando Finanças Pro...</p>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- 1. TELA DE AUTENTICAÇÃO (LOGIN / REGISTRO) -->
+      <!-- ========================================================================= -->
+      <div id="authScreen" class="hidden flex-1 flex items-center justify-center p-4 sm:p-6 bg-radial from-slate-900 to-slate-950">
+        <div class="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 backdrop-blur-xl relative overflow-hidden">
+          <div class="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+          <!-- Cabeçalho do Card de Login -->
+          <div class="text-center mb-8 relative">
+            <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-emerald-600 to-teal-400 rounded-2xl shadow-lg shadow-emerald-500/20 mb-3 text-white">
+              <i data-lucide="wallet" class="w-7 h-7"></i>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Finanças Pro</h1>
+            <p class="text-slate-400 text-sm mt-1">Controle Financeiro Pessoal Inteligente</p>
+          </div>
+
+          <!-- Abas Entrar / Criar Conta -->
+          <div class="flex p-1 bg-slate-950/70 border border-slate-800 rounded-xl mb-6">
+            <button id="tabLoginBtn" type="button" class="flex-1 py-2 text-sm font-semibold rounded-lg transition-all bg-emerald-600 text-white shadow">
+              Entrar
+            </button>
+            <button id="tabRegisterBtn" type="button" class="flex-1 py-2 text-sm font-semibold rounded-lg transition-all text-slate-400 hover:text-white">
+              Criar Conta
+            </button>
+          </div>
+
+          <!-- Formulário Auth -->
+          <form id="authForm" class="space-y-4">
+            <div id="nameFieldContainer" class="hidden">
+              <label for="authName" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Nome Completo</label>
+              <div class="relative">
+                <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5"></i>
+                <input type="text" id="authName" placeholder="Seu nome" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+              </div>
+            </div>
+
+            <div>
+              <label for="authEmail" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">E-mail</label>
+              <div class="relative">
+                <i data-lucide="mail" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5"></i>
+                <input type="email" id="authEmail" required placeholder="seu@email.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+              </div>
+            </div>
+
+            <div>
+              <label for="authPassword" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Senha</label>
+              <div class="relative">
+                <i data-lucide="lock" class="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5"></i>
+                <input type="password" id="authPassword" required minlength="6" placeholder="Mínimo 6 caracteres" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+                <button type="button" id="togglePasswordBtn" class="absolute right-3 top-3 text-slate-500 hover:text-slate-300 focus:outline-none">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div id="authErrorMsg" class="hidden text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5"></div>
+
+            <button type="submit" id="authSubmitBtn" class="w-full mt-2 py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 active:scale-[0.99] text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer">
+              <span id="authSubmitText">Entrar na Conta</span>
+              <div id="authSubmitSpinner" class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            </button>
+          </form>
+
+          <!-- Divisor / Modo Demonstração -->
+          <div class="mt-6 pt-6 border-t border-slate-800/80 text-center">
+            <p class="text-xs text-slate-400 mb-3">Deseja experimentar antes de cadastrar?</p>
+            <button id="btnDemoMode" type="button" class="w-full py-2.5 px-4 bg-slate-800/80 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-medium rounded-xl border border-slate-700/60 transition-all flex items-center justify-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i>
+              Experimentar Modo Demonstração (Sem Cadastro)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- 2. DASHBOARD PRINCIPAL (USUÁRIO AUTENTICADO) -->
+      <!-- ========================================================================= -->
+      <div id="dashboardScreen" class="hidden flex-1 flex flex-col">
+        <!-- CABEÇALHO -->
+        <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-sm">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Logo e Título -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gradient-to-tr from-emerald-600 to-teal-400 rounded-xl flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+                <i data-lucide="wallet" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h1 class="font-bold text-lg text-white leading-tight">Finanças Pro</h1>
+                  <span id="connectionBadge" class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Firebase</span>
+                </div>
+                <p id="userEmailDisplay" class="text-xs text-slate-400 truncate max-w-[200px] sm:max-w-xs">usuario@email.com</p>
+              </div>
+            </div>
+
+            <!-- Seletor de Mês e Ano -->
+            <div class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl p-1 shadow-inner">
+              <button id="btnPrevMonth" title="Mês anterior" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+              </button>
+              
+              <div class="flex items-center gap-2 px-3 py-1">
+                <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i>
+                <span id="currentMonthDisplay" class="font-semibold text-sm sm:text-base text-white capitalize whitespace-nowrap min-w-[130px] text-center">
+                  Carregando...
+                </span>
+              </div>
+
+              <button id="btnNextMonth" title="Próximo mês" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              </button>
+
+              <button id="btnTodayMonth" title="Voltar para o mês atual" class="hidden sm:inline-flex text-[11px] font-medium text-slate-400 hover:text-emerald-400 px-2 py-1 rounded-md hover:bg-slate-900 border border-slate-800 transition-colors ml-1">
+                Hoje
+              </button>
+            </div>
+
+            <!-- Ações do Usuário: Config Renda & Logout -->
+            <div class="flex items-center gap-2">
+              <button id="btnHeaderSalary" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl transition-all" title="Ajustar Renda Mensal">
+                <i data-lucide="circle-dollar-sign" class="w-4 h-4 text-emerald-400"></i>
+                <span class="hidden md:inline">Editar Renda</span>
+              </button>
+
+              <button id="btnLogout" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-rose-300 hover:text-rose-100 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl transition-all" title="Desconectar do sistema">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                <span>Sair</span>
+              </button>
+            </div>
+
+          </div>
+        </header>
+
+        <!-- BANNER DE AVISO (MODO DEMONSTRAÇÃO) -->
+        <div id="demoNoticeBanner" class="hidden bg-amber-500/10 border-b border-amber-500/20 text-amber-200 text-xs px-4 py-2.5">
+          <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0"></i>
+              <span>Você está navegando no <strong>Modo Demonstração</strong> (dados salvos localmente). Conecte-se com sua conta para persistir no Firebase!</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6 flex-1">
+          
+          <!-- CARDS DE MÉTRICAS NO TOPO (4 CARDS) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- Card 1: Salário / Renda Líquida -->
+            <div class="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all relative group">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Renda Mensal Líquida</span>
+                <button id="btnEditSalaryQuick" class="text-slate-500 hover:text-emerald-400 p-1 rounded-lg transition-colors" title="Editar valor do salário">
+                  <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </button>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <span id="metricSalary" class="text-2xl font-extrabold text-white">R$ 0,00</span>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                <i data-lucide="check-circle" class="w-3 h-3 text-emerald-400"></i>
+                Base cadastrada no seu perfil
+              </p>
+            </div>
+
+            <!-- Card 2: Total de Gastos Previstos no Mês -->
+            <div class="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gastos no Mês</span>
+                <div class="w-7 h-7 bg-rose-500/10 text-rose-400 rounded-lg flex items-center justify-center">
+                  <i data-lucide="trending-down" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <span id="metricTotalExpenses" class="text-2xl font-extrabold text-rose-400">R$ 0,00</span>
+              </div>
+              <p id="metricExpenseBreakdown" class="text-[11px] text-slate-400 mt-1 truncate">
+                Fixos: R$ 0 | Parc: R$ 0 | Var: R$ 0
+              </p>
+            </div>
+
+            <!-- Card 3: Saldo Restante -->
+            <div class="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Saldo Restante</span>
+                <div id="metricBalanceIcon" class="w-7 h-7 bg-emerald-500/10 text-emerald-400 rounded-lg flex items-center justify-center">
+                  <i data-lucide="piggy-bank" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <span id="metricBalance" class="text-2xl font-extrabold text-emerald-400">R$ 0,00</span>
+              </div>
+              <p id="metricBalanceLabel" class="text-[11px] text-emerald-400 mt-1">
+                Saldo positivo disponível
+              </p>
+            </div>
+
+            <!-- Card 4: Barra de Progresso / % Comprometida -->
+            <div class="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Renda Comprometida</span>
+                  <span id="metricPercentText" class="text-xs font-bold text-emerald-400">0%</span>
+                </div>
+                
+                <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                  <div id="metricProgressBar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between mt-2 pt-1 text-[11px]">
+                <span id="metricStatusBadge" class="text-emerald-400 font-medium">Saúde Excelente (&lt; 70%)</span>
+                <span class="text-slate-500">Teto ideal: 70%</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- AÇÕES RÁPIDAS (BOTÕES DE CADASTRO) -->
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-400"></i>
+              <span class="text-sm font-semibold text-white">Cadastrar Lançamentos:</span>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+              <button id="btnOpenVariableModal" class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-md shadow-emerald-600/20 transition-all cursor-pointer">
+                <i data-lucide="receipt" class="w-4 h-4"></i>
+                <span>+ Gasto Rápido</span>
+              </button>
+
+              <button id="btnOpenFixedModal" class="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-md shadow-indigo-600/20 transition-all cursor-pointer">
+                <i data-lucide="repeat" class="w-4 h-4"></i>
+                <span>+ Gasto Fixo</span>
+              </button>
+
+              <button id="btnOpenInstallmentModal" class="inline-flex items-center gap-2 px-3.5 py-2 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-md shadow-purple-600/20 transition-all cursor-pointer">
+                <i data-lucide="credit-card" class="w-4 h-4"></i>
+                <span>+ Parcela de Cartão</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- GRÁFICO RESUMO POR CATEGORIA & ESTATÍSTICAS -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="pie-chart" class="w-5 h-5 text-emerald-400"></i>
+                  <h2 class="text-base font-bold text-white">Gastos por Categoria no Mês</h2>
+                </div>
+                <span id="chartMonthLabel" class="text-xs text-slate-400">Novembro de 2026</span>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center flex-1">
+                <div class="chart-container flex items-center justify-center">
+                  <canvas id="categoryChart"></canvas>
+                  <div id="chartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+                    <div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center text-slate-500 mb-2">
+                      <i data-lucide="inbox" class="w-6 h-6"></i>
+                    </div>
+                    <p class="text-xs text-slate-400">Nenhuma despesa registrada para este mês.</p>
+                  </div>
+                </div>
+
+                <div id="categoryBreakdownList" class="space-y-2.5 max-h-[220px] overflow-y-auto pr-2"></div>
+              </div>
+            </div>
+
+            <!-- Composição Mensal -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800">
+                  <i data-lucide="layers" class="w-5 h-5 text-purple-400"></i>
+                  <h2 class="text-base font-bold text-white">Composição Mensal</h2>
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                  O sistema projeta matematicamente cada mês sem duplicar dados no banco:
+                </p>
+
+                <div class="space-y-3">
+                  <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-start gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <i data-lucide="repeat" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                      <h4 class="text-xs font-semibold text-white">Gastos Fixos</h4>
+                      <p class="text-[11px] text-slate-400">Exibidos automaticamente em todos os meses com dia de vencimento.</p>
+                    </div>
+                  </div>
+
+                  <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-start gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <i data-lucide="credit-card" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                      <h4 class="text-xs font-semibold text-white">Parcelas de Cartão</h4>
+                      <p class="text-[11px] text-slate-400">Cálculo de diferença em meses com rótulo "Nome (X/Total)" se ativa no período.</p>
+                    </div>
+                  </div>
+
+                  <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-start gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <i data-lucide="receipt" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                      <h4 class="text-xs font-semibold text-white">Despesas Variáveis</h4>
+                      <p class="text-[11px] text-slate-400">Lançamentos específicos por data com Pix, Débito ou Dinheiro.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <span>Total de itens no mês:</span>
+                <span id="activeItemsCount" class="font-bold text-white">0</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- LISTAGEM DETALHADA DAS DESPESAS DO MÊS -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <!-- Abas de Filtro -->
+              <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-xl text-xs">
+                <button type="button" data-filter="all" class="filter-tab-btn px-3 py-1.5 font-semibold rounded-lg bg-emerald-600 text-white shadow transition-all">
+                  Todos (<span id="countAll">0</span>)
+                </button>
+                <button type="button" data-filter="fixed" class="filter-tab-btn px-3 py-1.5 font-medium rounded-lg text-slate-400 hover:text-white transition-all">
+                  Fixos (<span id="countFixed">0</span>)
+                </button>
+                <button type="button" data-filter="installment" class="filter-tab-btn px-3 py-1.5 font-medium rounded-lg text-slate-400 hover:text-white transition-all">
+                  Cartão (<span id="countInstallment">0</span>)
+                </button>
+                <button type="button" data-filter="variable" class="filter-tab-btn px-3 py-1.5 font-medium rounded-lg text-slate-400 hover:text-white transition-all">
+                  Variáveis (<span id="countVariable">0</span>)
+                </button>
+              </div>
+
+              <!-- Busca Rápida -->
+              <div class="relative w-full md:w-64">
+                <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+                <input type="text" id="expenseSearchInput" placeholder="Buscar por nome ou categoria..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+              </div>
+            </div>
+
+            <!-- Tabela de Lançamentos -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm text-slate-300">
+                <thead class="bg-slate-950/60 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th scope="col" class="py-3.5 px-4 sm:px-6">Tipo</th>
+                    <th scope="col" class="py-3.5 px-4 sm:px-6">Descrição</th>
+                    <th scope="col" class="py-3.5 px-4 sm:px-6">Categoria</th>
+                    <th scope="col" class="py-3.5 px-4 sm:px-6">Vencimento / Data</th>
+                    <th scope="col" class="py-3.5 px-4 sm:px-6 text-right">Valor</th>
+                    <th scope="col" class="py-3.5 px-4 sm:px-6 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="expensesTableBody" class="divide-y divide-slate-800/80"></tbody>
+              </table>
+
+              <div id="tableEmptyState" class="hidden py-12 px-4 text-center">
+                <div class="w-14 h-14 bg-slate-800/80 rounded-2xl flex items-center justify-center text-slate-500 mx-auto mb-3">
+                  <i data-lucide="receipt-text" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-white">Nenhuma despesa para exibir</h3>
+                <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  Você ainda não cadastrou gastos para este mês ou não há registros com o filtro atual. Use os botões acima para cadastrar!
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </main>
+
+        <!-- RODAPÉ -->
+        <footer class="mt-auto border-t border-slate-800/80 bg-slate-950/80 py-4 text-center text-xs text-slate-500">
+          <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>Finanças Pro &bull; Controle Financeiro Pessoal Inteligente</p>
+            <p class="text-[11px] text-slate-600">Firebase Auth &bull; Firestore DB &bull; Chart.js &bull; Tailwind CSS</p>
+          </div>
+        </footer>
+      </div>
+
+    </div>
+
+    <!-- MODAL: EDITAR SALÁRIO / RENDA MENSAL (Doc: users/{uid}/settings/profile) -->
+    <div id="salaryModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop bg-black/70 transition-opacity">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <i data-lucide="circle-dollar-sign" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">Salário / Renda Líquida Mensal</h3>
+          </div>
+          <button type="button" class="close-modal-btn text-slate-400 hover:text-white p-1 rounded-lg">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <form id="salaryForm" class="space-y-4">
+          <div>
+            <label for="inputSalaryValue" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Valor da Renda Líquida Mensal (R$)
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-2.5 text-sm font-bold text-slate-500">R$</span>
+              <input type="number" id="inputSalaryValue" step="0.01" min="0" required placeholder="5000.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-11 pr-4 py-2.5 text-base font-bold text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1.5">
+              Esse valor é usado para calcular o Saldo Restante e a Porcentagem de Renda Comprometida no Dashboard.
+            </p>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+            <button type="button" class="close-modal-btn px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-md shadow-emerald-600/25 transition-all">
+              Salvar Renda
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: GASTO FIXO RECORRENTE (Coleção: users/{uid}/fixed_expenses) -->
+    <div id="fixedModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop bg-black/70 transition-opacity">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <i data-lucide="repeat" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">Cadastrar Gasto Fixo Recorrente</h3>
+          </div>
+          <button type="button" class="close-modal-btn text-slate-400 hover:text-white p-1 rounded-lg">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <form id="fixedExpenseForm" class="space-y-4">
+          <div>
+            <label for="fixedDesc" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Descrição do Gasto</label>
+            <input type="text" id="fixedDesc" required placeholder="Ex: Aluguel, Internet Fibra, Academia" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="fixedValue" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Valor (R$)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-xs font-bold text-slate-500">R$</span>
+                <input type="number" id="fixedValue" step="0.01" min="0.01" required placeholder="1200.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            </div>
+
+            <div>
+              <label for="fixedDueDay" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Dia de Vencimento</label>
+              <input type="number" id="fixedDueDay" min="1" max="31" required placeholder="Ex: 10" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+          </div>
+
+          <div>
+            <label for="fixedCategory" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Categoria</label>
+            <select id="fixedCategory" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="Moradia">Moradia</option>
+              <option value="Serviços & Assinaturas">Serviços & Assinaturas</option>
+              <option value="Educação">Educação</option>
+              <option value="Saúde">Saúde</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Alimentação">Alimentação</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+
+          <div class="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-[11px] text-indigo-300">
+            <strong>Recorrência:</strong> Este gasto fixo aparecerá automaticamente em todos os meses selecionados sem necessidade de duplicá-lo.
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+            <button type="button" class="close-modal-btn px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-md shadow-indigo-600/25 transition-all">
+              Salvar Gasto Fixo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: PARCELAS DE CARTÃO (Coleção: users/{uid}/installments) -->
+    <div id="installmentModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop bg-black/70 transition-opacity">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+              <i data-lucide="credit-card" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">Cadastrar Parcela de Cartão</h3>
+          </div>
+          <button type="button" class="close-modal-btn text-slate-400 hover:text-white p-1 rounded-lg">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <form id="installmentExpenseForm" class="space-y-4">
+          <div>
+            <label for="instDesc" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Descrição da Compra</label>
+            <input type="text" id="instDesc" required placeholder="Ex: Notebook Dell, Sofá Retrátil, Passagem" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="instValue" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Valor da Parcela (R$)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-xs font-bold text-slate-500">R$</span>
+                <input type="number" id="instValue" step="0.01" min="0.01" required placeholder="250.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+              </div>
+            </div>
+
+            <div>
+              <label for="instTotal" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Total de Parcelas</label>
+              <input type="number" id="instTotal" min="2" max="120" required placeholder="Ex: 10" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="instStartMonth" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Mês de Início (YYYY-MM)</label>
+              <input type="month" id="instStartMonth" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            </div>
+
+            <div>
+              <label for="instInitialNumber" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Parcela Inicial no Início</label>
+              <input type="number" id="instInitialNumber" min="1" value="1" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
+            </div>
+          </div>
+
+          <div>
+            <label for="instCategory" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Categoria</label>
+            <select id="instCategory" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="Cartão de Crédito">Cartão de Crédito</option>
+              <option value="Lazer">Lazer</option>
+              <option value="Moradia">Moradia</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Educação">Educação</option>
+              <option value="Saúde">Saúde</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+
+          <div class="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[11px] text-purple-300">
+            <strong>Cálculo Automático:</strong> Ao navegar pelos meses, o app calcula a diferença em relação ao mês de início. Se o mês selecionado estiver no intervalo, será exibido no formato "Nome (X/Total)".
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+            <button type="button" class="close-modal-btn px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl shadow-md shadow-purple-600/25 transition-all">
+              Salvar Compra Parcelada
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: DESPESA VARIÁVEL (Coleção: users/{uid}/variable_expenses) -->
+    <div id="variableModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop bg-black/70 transition-opacity">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <i data-lucide="receipt" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">Cadastrar Gasto Rápido / Variável</h3>
+          </div>
+          <button type="button" class="close-modal-btn text-slate-400 hover:text-white p-1 rounded-lg">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <form id="variableExpenseForm" class="space-y-4">
+          <div>
+            <label for="varDesc" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Descrição</label>
+            <input type="text" id="varDesc" required placeholder="Ex: Supermercado, Almoço de Domingo, Combustível" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="varValue" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Valor (R$)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-xs font-bold text-slate-500">R$</span>
+                <input type="number" id="varValue" step="0.01" min="0.01" required placeholder="89.50" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+            </div>
+
+            <div>
+              <label for="varDate" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Data do Gasto</label>
+              <input type="date" id="varDate" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="varCategory" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Categoria</label>
+              <select id="varCategory" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="Alimentação">Alimentação</option>
+                <option value="Transporte">Transporte</option>
+                <option value="Lazer">Lazer</option>
+                <option value="Saúde">Saúde</option>
+                <option value="Moradia">Moradia</option>
+                <option value="Educação">Educação</option>
+                <option value="Outros">Outros</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="varPaymentMethod" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Forma de Pagamento</label>
+              <select id="varPaymentMethod" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="Pix">Pix</option>
+                <option value="Débito">Débito</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Boleto">Boleto</option>
+                <option value="Outros">Outros</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+            <button type="button" class="close-modal-btn px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-md shadow-emerald-600/25 transition-all">
+              Salvar Despesa
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- SCRIPT PRINCIPAL ES MODULE (FIREBASE SDK v13.2.0 + LÓGICA DE NEGÓCIO) -->
+    <!-- ========================================================================= -->
+    <script type="module">
+      // Importação oficial do Firebase v13.2.0 ES Modules via CDN
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
+      import { 
+        getAuth, 
+        signInWithEmailAndPassword, 
+        createUserWithEmailAndPassword, 
+        signOut, 
+        onAuthStateChanged,
+        updateProfile
+      } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
+      import { 
+        getFirestore, 
+        doc, 
+        getDoc, 
+        setDoc, 
+        collection, 
+        getDocs, 
+        addDoc, 
+        deleteDoc, 
+        onSnapshot,
+        query
+      } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
+
+      // =========================================================================
+      // CONFIGURAÇÃO DO FIREBASE (Suas chaves cadastradas)
+      // =========================================================================
+      const firebaseConfig = {
+        apiKey: "AIzaSyBQYUxh6fFF4NyL9dAC_x08lRqWJX4AbhM",
+        authDomain: "controle-financeiro-58ebb.firebaseapp.com",
+        projectId: "controle-financeiro-58ebb",
+        storageBucket: "controle-financeiro-58ebb.firebasestorage.app",
+        messagingSenderId: "206476923997",
+        appId: "1:206476923997:web:1adb91caf77a7793a769b4"
+      };
+
+      // Inicialização do Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const isFirebaseActive = true;
+
+      // =========================================================================
+      // ESTADO GLOBAL DA APLICAÇÃO
+      // =========================================================================
+      const state = {
+        user: null,              // Usuário autenticado
+        isDemoMode: false,       // Flag para modo demonstração
+        currentDate: new Date(), // Mês/Ano selecionado atualmente
+        salary: 0,               // Renda líquida mensal
+        fixedExpenses: [],       // Coleção: users/{uid}/fixed_expenses
+        installments: [],        // Coleção: users/{uid}/installments
+        variableExpenses: [],    // Coleção: users/{uid}/variable_expenses
+        currentFilter: 'all',    // Filtro ativo da tabela
+        searchQuery: '',         // Busca
+        chartInstance: null      // Instância Chart.js
+      };
+
+      // Dados de demonstração para testes rápidos sem conta
+      const demoData = {
+        salary: 5800.00,
+        fixedExpenses: [
+          { id: 'fix-1', descricao: 'Aluguel do Apartamento', valor: 1650.00, dia_vencimento: 10, categoria: 'Moradia' },
+          { id: 'fix-2', descricao: 'Internet Fibra 600MB', valor: 129.90, dia_vencimento: 15, categoria: 'Serviços & Assinaturas' },
+          { id: 'fix-3', descricao: 'Plano de Saúde Familiar', valor: 450.00, dia_vencimento: 5, categoria: 'Saúde' },
+          { id: 'fix-4', descricao: 'Academia & Natação', valor: 140.00, dia_vencimento: 20, categoria: 'Saúde' }
+        ],
+        installments: [
+          { id: 'inst-1', descricao: 'Notebook Dell Inspiron', valor_parcela: 389.90, total_parcelas: 10, parcela_inicial: 1, mes_inicio: '2026-08', categoria: 'Cartão de Crédito' },
+          { id: 'inst-2', descricao: 'Geladeira Frost Free', valor_parcela: 245.00, total_parcelas: 12, parcela_inicial: 1, mes_inicio: '2026-03', categoria: 'Moradia' },
+          { id: 'inst-3', descricao: 'Passagens Férias Florianópolis', valor_parcela: 198.50, total_parcelas: 6, parcela_inicial: 1, mes_inicio: '2026-10', categoria: 'Lazer' }
+        ],
+        variableExpenses: [
+          { id: 'var-1', descricao: 'Supermercado Semanal', valor: 420.50, data: '2026-11-03', categoria: 'Alimentação', forma_pagamento: 'Pix' },
+          { id: 'var-2', descricao: 'Abastecimento Gasolina Comum', valor: 180.00, data: '2026-11-05', categoria: 'Transporte', forma_pagamento: 'Débito' },
+          { id: 'var-3', descricao: 'Jantar comemorativo Pizzaria', valor: 145.00, data: '2026-11-06', categoria: 'Alimentação', forma_pagamento: 'Pix' },
+          { id: 'var-4', descricao: 'Farmácia Medicamentos', valor: 78.40, data: '2026-11-07', categoria: 'Saúde', forma_pagamento: 'Dinheiro' }
+        ]
+      };
+
+      // =========================================================================
+      // UTILITÁRIOS: MOEDA, DATAS E MATEMÁTICA DE PARCELAS
+      // =========================================================================
+      function formatBRL(value) {
+        return new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(Number(value) || 0);
+      }
+
+      function getYearMonthString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+      }
+
+      function formatMonthName(date) {
+        return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      }
+
+      function formatDateBR(isoDate) {
+        if (!isoDate) return '';
+        const parts = isoDate.split('-');
+        if (parts.length === 3) {
+          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return isoDate;
+      }
+
+      // Regra matemática de parcelas:
+      // Diferença em meses entre o mês selecionado e o mes_inicio
+      function getInstallmentInfo(item, selectedYearMonth) {
+        try {
+          if (!item.mes_inicio || !item.total_parcelas) return null;
+          
+          const [selYear, selMonth] = selectedYearMonth.split('-').map(Number);
+          const [initYear, initMonth] = item.mes_inicio.split('-').map(Number);
+          
+          const diffMeses = (selYear - initYear) * 12 + (selMonth - initMonth);
+          const parcelaInicial = Number(item.parcela_inicial || 1);
+          const totalParcelas = Number(item.total_parcelas);
+          const parcelaAtual = parcelaInicial + diffMeses;
+
+          const isAtiva = parcelaAtual >= 1 && parcelaAtual <= totalParcelas;
+
+          return {
+            isAtiva,
+            parcelaAtual,
+            totalParcelas,
+            rotulo: `${item.descricao} (${parcelaAtual}/${totalParcelas})`
+          };
+        } catch (e) {
+          console.error('Erro ao calcular parcela:', e);
+          return null;
+        }
+      }
+
+      // =========================================================================
+      // SISTEMA DE NOTIFICAÇÕES (TOAST)
+      // =========================================================================
+      function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `p-3.5 rounded-xl border shadow-xl flex items-center gap-3 text-xs font-semibold pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0 ${
+          type === 'success' 
+            ? 'bg-slate-900 border-emerald-500/40 text-emerald-300' 
+            : type === 'error'
+            ? 'bg-slate-900 border-rose-500/40 text-rose-300'
+            : 'bg-slate-900 border-amber-500/40 text-amber-300'
+        }`;
+
+        const iconName = type === 'success' ? 'check-circle-2' : type === 'error' ? 'alert-circle' : 'info';
+        toast.innerHTML = `
+          <i data-lucide="${iconName}" class="w-4 h-4 shrink-0"></i>
+          <span class="flex-1">${message}</span>
+        `;
+        container.appendChild(toast);
+        lucide.createIcons({ root: toast });
+
+        setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, 4000);
+      }
+
+      // =========================================================================
+      // OPERAÇÕES DO FIRESTORE (users/{uid}/...)
+      // =========================================================================
+
+      // Carregar Salário (users/{uid}/settings/profile)
+      async function loadProfile() {
+        if (state.isDemoMode || !state.user) {
+          const savedSalary = localStorage.getItem('demo_salary');
+          state.salary = savedSalary !== null ? Number(savedSalary) : demoData.salary;
+          renderDashboard();
+          return;
+        }
+
+        try {
+          const profileDocRef = doc(db, 'users', state.user.uid, 'settings', 'profile');
+          const docSnap = await getDoc(profileDocRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            state.salary = Number(data.salario || data.salario_liquido || 0);
+          } else {
+            state.salary = 0;
+            await setDoc(profileDocRef, { salario: 0, updatedAt: new Date().toISOString() });
+          }
+          renderDashboard();
+        } catch (err) {
+          console.error('Erro ao carregar perfil do Firestore:', err);
+          showToast('Erro ao carregar salário do perfil', 'error');
+        }
+      }
+
+      // Salvar Salário (users/{uid}/settings/profile)
+      async function saveSalary(newSalary) {
+        const numVal = Math.max(0, Number(newSalary) || 0);
+        state.salary = numVal;
+
+        if (state.isDemoMode || !state.user) {
+          localStorage.setItem('demo_salary', String(numVal));
+          showToast(`Salário atualizado para ${formatBRL(numVal)}!`);
+          renderDashboard();
+          return;
+        }
+
+        try {
+          const profileDocRef = doc(db, 'users', state.user.uid, 'settings', 'profile');
+          await setDoc(profileDocRef, { 
+            salario: numVal, 
+            salario_liquido: numVal,
+            updatedAt: new Date().toISOString() 
+          }, { merge: true });
+          showToast(`Salário salvo no Firestore: ${formatBRL(numVal)}!`);
+          renderDashboard();
+        } catch (err) {
+          console.error('Erro ao salvar salário no Firestore:', err);
+          showToast('Falha ao salvar salário no banco de dados', 'error');
+        }
+      }
+
+      let unsubscribeFixed = null;
+      let unsubscribeInstallments = null;
+      let unsubscribeVariable = null;
+
+      function setupDataListeners() {
+        if (state.isDemoMode || !state.user) {
+          const savedFix = localStorage.getItem('demo_fixed');
+          const savedInst = localStorage.getItem('demo_inst');
+          const savedVar = localStorage.getItem('demo_var');
+
+          state.fixedExpenses = savedFix ? JSON.parse(savedFix) : [...demoData.fixedExpenses];
+          state.installments = savedInst ? JSON.parse(savedInst) : [...demoData.installments];
+          state.variableExpenses = savedVar ? JSON.parse(savedVar) : [...demoData.variableExpenses];
+
+          renderDashboard();
+          return;
+        }
+
+        const uid = state.user.uid;
+
+        // 1. users/{uid}/fixed_expenses
+        const fixedCol = collection(db, 'users', uid, 'fixed_expenses');
+        if (unsubscribeFixed) unsubscribeFixed();
+        unsubscribeFixed = onSnapshot(fixedCol, (snapshot) => {
+          state.fixedExpenses = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          renderDashboard();
+        }, (err) => console.error('Erro fixed_expenses:', err));
+
+        // 2. users/{uid}/installments
+        const instCol = collection(db, 'users', uid, 'installments');
+        if (unsubscribeInstallments) unsubscribeInstallments();
+        unsubscribeInstallments = onSnapshot(instCol, (snapshot) => {
+          state.installments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          renderDashboard();
+        }, (err) => console.error('Erro installments:', err));
+
+        // 3. users/{uid}/variable_expenses
+        const varCol = collection(db, 'users', uid, 'variable_expenses');
+        if (unsubscribeVariable) unsubscribeVariable();
+        unsubscribeVariable = onSnapshot(varCol, (snapshot) => {
+          state.variableExpenses = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          renderDashboard();
+        }, (err) => console.error('Erro variable_expenses:', err));
+      }
+
+      // Adicionar Gasto Fixo
+      async function addFixedExpense(data) {
+        if (state.isDemoMode || !state.user) {
+          const newItem = { id: 'fix-' + Date.now(), ...data };
+          state.fixedExpenses.unshift(newItem);
+          localStorage.setItem('demo_fixed', JSON.stringify(state.fixedExpenses));
+          showToast('Gasto fixo adicionado!');
+          renderDashboard();
+          return;
+        }
+
+        try {
+          const colRef = collection(db, 'users', state.user.uid, 'fixed_expenses');
+          await addDoc(colRef, { ...data, createdAt: new Date().toISOString() });
+          showToast('Gasto fixo salvo no Firestore!');
+        } catch (err) {
+          console.error(err);
+          showToast('Erro ao salvar gasto fixo', 'error');
+        }
+      }
+
+      // Adicionar Parcela de Cartão
+      async function addInstallmentExpense(data) {
+        if (state.isDemoMode || !state.user) {
+          const newItem = { id: 'inst-' + Date.now(), ...data };
+          state.installments.unshift(newItem);
+          localStorage.setItem('demo_inst', JSON.stringify(state.installments));
+          showToast('Compra parcelada cadastrada!');
+          renderDashboard();
+          return;
+        }
+
+        try {
+          const colRef = collection(db, 'users', state.user.uid, 'installments');
+          await addDoc(colRef, { ...data, createdAt: new Date().toISOString() });
+          showToast('Parcela de cartão salva no Firestore!');
+        } catch (err) {
+          console.error(err);
+          showToast('Erro ao salvar parcela', 'error');
+        }
+      }
+
+      // Adicionar Despesa Variável
+      async function addVariableExpense(data) {
+        if (state.isDemoMode || !state.user) {
+          const newItem = { id: 'var-' + Date.now(), ...data };
+          state.variableExpenses.unshift(newItem);
+          localStorage.setItem('demo_var', JSON.stringify(state.variableExpenses));
+          showToast('Despesa rápida adicionada!');
+          renderDashboard();
+          return;
+        }
+
+        try {
+          const colRef = collection(db, 'users', state.user.uid, 'variable_expenses');
+          await addDoc(colRef, { ...data, createdAt: new Date().toISOString() });
+          showToast('Despesa variável salva no Firestore!');
+        } catch (err) {
+          console.error(err);
+          showToast('Erro ao salvar despesa', 'error');
+        }
+      }
+
+      // Excluir Lançamento
+      window.deleteExpenseItem = async function(type, id) {
+        if (!confirm('Deseja realmente remover este lançamento?')) return;
+
+        if (state.isDemoMode || !state.user) {
+          if (type === 'fixed') {
+            state.fixedExpenses = state.fixedExpenses.filter(i => i.id !== id);
+            localStorage.setItem('demo_fixed', JSON.stringify(state.fixedExpenses));
+          } else if (type === 'installment') {
+            state.installments = state.installments.filter(i => i.id !== id);
+            localStorage.setItem('demo_inst', JSON.stringify(state.installments));
+          } else if (type === 'variable') {
+            state.variableExpenses = state.variableExpenses.filter(i => i.id !== id);
+            localStorage.setItem('demo_var', JSON.stringify(state.variableExpenses));
+          }
+          showToast('Lançamento removido!');
+          renderDashboard();
+          return;
+        }
+
+        try {
+          let colName = type === 'fixed' ? 'fixed_expenses' : type === 'installment' ? 'installments' : 'variable_expenses';
+          const docRef = doc(db, 'users', state.user.uid, colName, id);
+          await deleteDoc(docRef);
+          showToast('Lançamento excluído do Firestore!');
+        } catch (err) {
+          console.error(err);
+          showToast('Erro ao remover lançamento', 'error');
+        }
+      };
+
+      // =========================================================================
+      // RENDERIZAÇÃO DO DASHBOARD E CÁLCULOS DO MÊS
+      // =========================================================================
+      function renderDashboard() {
+        const selectedYearMonth = getYearMonthString(state.currentDate);
+        const monthLabel = formatMonthName(state.currentDate);
+
+        document.getElementById('currentMonthDisplay').textContent = monthLabel;
+        document.getElementById('chartMonthLabel').textContent = monthLabel;
+
+        // 1. Fixos: Em todos os meses
+        const activeFixed = state.fixedExpenses.map(item => ({
+          ...item,
+          tipo: 'fixed',
+          tipoRotulo: 'Fixo',
+          valorNumerico: Number(item.valor) || 0,
+          exibirDescricao: item.descricao,
+          exibirVencimento: `Todo dia ${item.dia_vencimento || '1'}`
+        }));
+
+        // 2. Parcelas de Cartão
+        const activeInstallments = [];
+        state.installments.forEach(item => {
+          const calc = getInstallmentInfo(item, selectedYearMonth);
+          if (calc && calc.isAtiva) {
+            activeInstallments.push({
+              ...item,
+              tipo: 'installment',
+              tipoRotulo: `Cartão (${calc.parcelaAtual}/${calc.totalParcelas})`,
+              valorNumerico: Number(item.valor_parcela) || 0,
+              exibirDescricao: calc.rotulo,
+              exibirVencimento: `Início: ${formatDateBR(item.mes_inicio + '-01').substring(3)}`
+            });
+          }
+        });
+
+        // 3. Variáveis: estritamente as do mês ativo
+        const activeVariables = [];
+        state.variableExpenses.forEach(item => {
+          if (item.data && item.data.startsWith(selectedYearMonth)) {
+            activeVariables.push({
+              ...item,
+              tipo: 'variable',
+              tipoRotulo: `Variável • ${item.forma_pagamento || 'Outro'}`,
+              valorNumerico: Number(item.valor) || 0,
+              exibirDescricao: item.descricao,
+              exibirVencimento: formatDateBR(item.data)
+            });
+          }
+        });
+
+        const allActiveMonthItems = [...activeFixed, ...activeInstallments, ...activeVariables];
+
+        const totalFixed = activeFixed.reduce((sum, item) => sum + item.valorNumerico, 0);
+        const totalInstallments = activeInstallments.reduce((sum, item) => sum + item.valorNumerico, 0);
+        const totalVariable = activeVariables.reduce((sum, item) => sum + item.valorNumerico, 0);
+        const totalExpenses = totalFixed + totalInstallments + totalVariable;
+        
+        const salary = state.salary || 0;
+        const balance = salary - totalExpenses;
+        const committedPercentage = salary > 0 ? (totalExpenses / salary) * 100 : (totalExpenses > 0 ? 100 : 0);
+
+        // Atualizar Métricas
+        document.getElementById('metricSalary').textContent = formatBRL(salary);
+        document.getElementById('metricTotalExpenses').textContent = formatBRL(totalExpenses);
+        document.getElementById('metricExpenseBreakdown').textContent = 
+          `Fixos: ${formatBRL(totalFixed)} | Parc: ${formatBRL(totalInstallments)} | Var: ${formatBRL(totalVariable)}`;
+
+        const metricBalanceEl = document.getElementById('metricBalance');
+        const metricBalanceLabelEl = document.getElementById('metricBalanceLabel');
+        const metricBalanceIconEl = document.getElementById('metricBalanceIcon');
+        metricBalanceEl.textContent = formatBRL(balance);
+
+        if (balance >= 0) {
+          metricBalanceEl.className = 'text-2xl font-extrabold text-emerald-400';
+          metricBalanceLabelEl.className = 'text-[11px] text-emerald-400 mt-1';
+          metricBalanceLabelEl.textContent = 'Saldo positivo disponível / Poupança';
+          metricBalanceIconEl.className = 'w-7 h-7 bg-emerald-500/10 text-emerald-400 rounded-lg flex items-center justify-center';
+        } else {
+          metricBalanceEl.className = 'text-2xl font-extrabold text-rose-400';
+          metricBalanceLabelEl.className = 'text-[11px] text-rose-400 mt-1';
+          metricBalanceLabelEl.textContent = 'Atenção: Despesas superam a renda';
+          metricBalanceIconEl.className = 'w-7 h-7 bg-rose-500/10 text-rose-400 rounded-lg flex items-center justify-center';
+        }
+
+        const metricPercentTextEl = document.getElementById('metricPercentText');
+        const metricProgressBarEl = document.getElementById('metricProgressBar');
+        const metricStatusBadgeEl = document.getElementById('metricStatusBadge');
+
+        metricPercentTextEl.textContent = `${committedPercentage.toFixed(1)}% comprometido`;
+        metricProgressBarEl.style.width = `${Math.min(100, committedPercentage)}%`;
+
+        if (committedPercentage < 70) {
+          metricProgressBarEl.className = 'h-full bg-emerald-500 rounded-full transition-all duration-500';
+          metricPercentTextEl.className = 'text-xs font-bold text-emerald-400';
+          metricStatusBadgeEl.className = 'text-emerald-400 font-medium';
+          metricStatusBadgeEl.textContent = 'Saúde Excelente (< 70%)';
+        } else if (committedPercentage <= 90) {
+          metricProgressBarEl.className = 'h-full bg-amber-500 rounded-full transition-all duration-500';
+          metricPercentTextEl.className = 'text-xs font-bold text-amber-400';
+          metricStatusBadgeEl.className = 'text-amber-400 font-medium';
+          metricStatusBadgeEl.textContent = 'Atenção (70% a 90%)';
+        } else {
+          metricProgressBarEl.className = 'h-full bg-rose-500 rounded-full transition-all duration-500';
+          metricPercentTextEl.className = 'text-xs font-bold text-rose-400';
+          metricStatusBadgeEl.className = 'text-rose-400 font-medium';
+          metricStatusBadgeEl.textContent = 'Risco Alto (> 90%)';
+        }
+
+        document.getElementById('countAll').textContent = allActiveMonthItems.length;
+        document.getElementById('countFixed').textContent = activeFixed.length;
+        document.getElementById('countInstallment').textContent = activeInstallments.length;
+        document.getElementById('countVariable').textContent = activeVariables.length;
+        document.getElementById('activeItemsCount').textContent = allActiveMonthItems.length;
+
+        renderCategoryChart(allActiveMonthItems, totalExpenses);
+        renderExpensesTable(allActiveMonthItems);
+
+        lucide.createIcons();
+      }
+
+      // Paleta de cores das categorias
+      const categoryPalette = {
+        'Moradia': '#3b82f6',
+        'Alimentação': '#f97316',
+        'Transporte': '#06b6d4',
+        'Saúde': '#10b981',
+        'Lazer': '#ec4899',
+        'Educação': '#eab308',
+        'Serviços & Assinaturas': '#6366f1',
+        'Cartão de Crédito': '#a855f7',
+        'Outros': '#64748b'
+      };
+
+      function renderCategoryChart(items, totalExpenses) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        const emptyState = document.getElementById('chartEmptyState');
+        const breakdownList = document.getElementById('categoryBreakdownList');
+
+        const categoryMap = {};
+        items.forEach(item => {
+          const cat = item.categoria || 'Outros';
+          categoryMap[cat] = (categoryMap[cat] || 0) + item.valorNumerico;
+        });
+
+        const labels = Object.keys(categoryMap);
+        const dataValues = Object.values(categoryMap);
+
+        if (labels.length === 0 || totalExpenses === 0) {
+          if (state.chartInstance) {
+            state.chartInstance.destroy();
+            state.chartInstance = null;
+          }
+          emptyState.classList.remove('hidden');
+          breakdownList.innerHTML = '<p class="text-xs text-slate-500 py-4 text-center">Nenhum gasto para listar.</p>';
+          return;
+        }
+
+        emptyState.classList.add('hidden');
+        const colors = labels.map(cat => categoryPalette[cat] || '#94a3b8');
+
+        breakdownList.innerHTML = labels.map((cat, index) => {
+          const val = categoryMap[cat];
+          const pct = ((val / totalExpenses) * 100).toFixed(1);
+          const color = colors[index];
+          return `
+            <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800 text-xs">
+              <div class="flex items-center gap-2 truncate">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${color}"></span>
+                <span class="text-slate-300 font-medium truncate">${cat}</span>
+              </div>
+              <div class="text-right shrink-0">
+                <span class="font-bold text-white">${formatBRL(val)}</span>
+                <span class="text-[10px] text-slate-500 ml-1">(${pct}%)</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (state.chartInstance) {
+          state.chartInstance.destroy();
+        }
+
+        state.chartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: dataValues,
+              backgroundColor: colors,
+              borderColor: '#0f172a',
+              borderWidth: 2,
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#0f172a',
+                titleColor: '#f8fafc',
+                bodyColor: '#e2e8f0',
+                borderColor: '#334155',
+                borderWidth: 1,
+                padding: 10,
+                callbacks: {
+                  label: function(context) {
+                    const val = context.parsed;
+                    const pct = ((val / totalExpenses) * 100).toFixed(1);
+                    return ` ${context.label}: ${formatBRL(val)} (${pct}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      function renderExpensesTable(items) {
+        const tbody = document.getElementById('expensesTableBody');
+        const emptyState = document.getElementById('tableEmptyState');
+
+        let filtered = items;
+        if (state.currentFilter !== 'all') {
+          filtered = filtered.filter(item => item.tipo === state.currentFilter);
+        }
+
+        if (state.searchQuery.trim() !== '') {
+          const q = state.searchQuery.toLowerCase().trim();
+          filtered = filtered.filter(item => 
+            (item.descricao && item.descricao.toLowerCase().includes(q)) ||
+            (item.categoria && item.categoria.toLowerCase().includes(q))
+          );
+        }
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = '';
+          emptyState.classList.remove('hidden');
+          return;
+        }
+
+        emptyState.classList.add('hidden');
+
+        tbody.innerHTML = filtered.map(item => {
+          let badgeClass = '';
+          let badgeIcon = '';
+          if (item.tipo === 'fixed') {
+            badgeClass = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
+            badgeIcon = 'repeat';
+          } else if (item.tipo === 'installment') {
+            badgeClass = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+            badgeIcon = 'credit-card';
+          } else {
+            badgeClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+            badgeIcon = 'receipt';
+          }
+
+          const catColor = categoryPalette[item.categoria] || '#94a3b8';
+
+          return `
+            <tr class="hover:bg-slate-950/40 transition-colors">
+              <td class="py-3 px-4 sm:px-6 whitespace-nowrap">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeClass}">
+                  <i data-lucide="${badgeIcon}" class="w-3.5 h-3.5"></i>
+                  <span>${item.tipoRotulo}</span>
+                </span>
+              </td>
+              <td class="py-3 px-4 sm:px-6 font-medium text-white max-w-xs truncate">
+                ${item.exibirDescricao}
+              </td>
+              <td class="py-3 px-4 sm:px-6 whitespace-nowrap">
+                <span class="inline-flex items-center gap-1.5 text-xs">
+                  <span class="w-2 h-2 rounded-full" style="background-color: ${catColor}"></span>
+                  <span class="text-slate-300">${item.categoria || 'Geral'}</span>
+                </span>
+              </td>
+              <td class="py-3 px-4 sm:px-6 whitespace-nowrap text-xs text-slate-400">
+                ${item.exibirVencimento}
+              </td>
+              <td class="py-3 px-4 sm:px-6 whitespace-nowrap text-right font-bold text-white">
+                ${formatBRL(item.valorNumerico)}
+              </td>
+              <td class="py-3 px-4 sm:px-6 whitespace-nowrap text-center">
+                <button 
+                  onclick="window.deleteExpenseItem('${item.tipo}', '${item.id}')" 
+                  class="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer" 
+                  title="Excluir este lançamento">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // =========================================================================
+      // GERENCIAMENTO DE MODAIS E INTERAÇÕES
+      // =========================================================================
+      function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+          modal.classList.remove('hidden');
+          lucide.createIcons({ root: modal });
+        }
+      }
+
+      function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.add('hidden');
+      }
+
+      document.querySelectorAll('.close-modal-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const modal = e.target.closest('.fixed');
+          if (modal) modal.classList.add('hidden');
+        });
+      });
+
+      window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-backdrop')) {
+          e.target.classList.add('hidden');
+        }
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+        }
+      });
+
+      // Navegação entre meses
+      document.getElementById('btnPrevMonth').addEventListener('click', () => {
+        state.currentDate.setMonth(state.currentDate.getMonth() - 1);
+        renderDashboard();
+      });
+
+      document.getElementById('btnNextMonth').addEventListener('click', () => {
+        state.currentDate.setMonth(state.currentDate.getMonth() + 1);
+        renderDashboard();
+      });
+
+      document.getElementById('btnTodayMonth').addEventListener('click', () => {
+        state.currentDate = new Date();
+        renderDashboard();
+      });
+
+      // Abas de filtro
+      document.querySelectorAll('.filter-tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const target = e.currentTarget;
+          state.currentFilter = target.getAttribute('data-filter');
+
+          document.querySelectorAll('.filter-tab-btn').forEach(b => {
+            b.className = 'filter-tab-btn px-3 py-1.5 font-medium rounded-lg text-slate-400 hover:text-white transition-all';
+          });
+          target.className = 'filter-tab-btn px-3 py-1.5 font-semibold rounded-lg bg-emerald-600 text-white shadow transition-all';
+
+          renderDashboard();
+        });
+      });
+
+      // Busca
+      document.getElementById('expenseSearchInput').addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        renderDashboard();
+      });
+
+      // Salário
+      document.getElementById('btnEditSalaryQuick').addEventListener('click', () => {
+        document.getElementById('inputSalaryValue').value = state.salary || '';
+        openModal('salaryModal');
+      });
+
+      document.getElementById('btnHeaderSalary').addEventListener('click', () => {
+        document.getElementById('inputSalaryValue').value = state.salary || '';
+        openModal('salaryModal');
+      });
+
+      document.getElementById('salaryForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const val = parseFloat(document.getElementById('inputSalaryValue').value);
+        await saveSalary(val);
+        closeModal('salaryModal');
+      });
+
+      // Gasto Fixo
+      document.getElementById('btnOpenFixedModal').addEventListener('click', () => {
+        document.getElementById('fixedExpenseForm').reset();
+        openModal('fixedModal');
+      });
+
+      document.getElementById('fixedExpenseForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const desc = document.getElementById('fixedDesc').value.trim();
+        const val = parseFloat(document.getElementById('fixedValue').value);
+        const dueDay = parseInt(document.getElementById('fixedDueDay').value, 10);
+        const cat = document.getElementById('fixedCategory').value;
+
+        if (!desc || isNaN(val) || val <= 0) {
+          showToast('Preencha os campos corretamente', 'error');
+          return;
+        }
+
+        await addFixedExpense({
+          descricao: desc,
+          valor: val,
+          dia_vencimento: dueDay,
+          categoria: cat
+        });
+
+        closeModal('fixedModal');
+      });
+
+      // Parcela de Cartão
+      document.getElementById('btnOpenInstallmentModal').addEventListener('click', () => {
+        document.getElementById('installmentExpenseForm').reset();
+        document.getElementById('instStartMonth').value = getYearMonthString(state.currentDate);
+        openModal('installmentModal');
+      });
+
+      document.getElementById('installmentExpenseForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const desc = document.getElementById('instDesc').value.trim();
+        const val = parseFloat(document.getElementById('instValue').value);
+        const total = parseInt(document.getElementById('instTotal').value, 10);
+        const startMonth = document.getElementById('instStartMonth').value;
+        const initialNum = parseInt(document.getElementById('instInitialNumber').value, 10) || 1;
+        const cat = document.getElementById('instCategory').value;
+
+        if (!desc || isNaN(val) || val <= 0 || !startMonth || isNaN(total) || total < 1) {
+          showToast('Preencha os dados corretamente', 'error');
+          return;
+        }
+
+        await addInstallmentExpense({
+          descricao: desc,
+          valor_parcela: val,
+          total_parcelas: total,
+          parcela_inicial: initialNum,
+          mes_inicio: startMonth,
+          categoria: cat
+        });
+
+        closeModal('installmentModal');
+      });
+
+      // Despesa Variável
+      document.getElementById('btnOpenVariableModal').addEventListener('click', () => {
+        document.getElementById('variableExpenseForm').reset();
+        document.getElementById('varDate').value = new Date().toISOString().split('T')[0];
+        openModal('variableModal');
+      });
+
+      document.getElementById('variableExpenseForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const desc = document.getElementById('varDesc').value.trim();
+        const val = parseFloat(document.getElementById('varValue').value);
+        const date = document.getElementById('varDate').value;
+        const cat = document.getElementById('varCategory').value;
+        const pay = document.getElementById('varPaymentMethod').value;
+
+        if (!desc || isNaN(val) || val <= 0 || !date) {
+          showToast('Preencha todos os campos da despesa', 'error');
+          return;
+        }
+
+        await addVariableExpense({
+          descricao: desc,
+          valor: val,
+          data: date,
+          categoria: cat,
+          forma_pagamento: pay
+        });
+
+        closeModal('variableModal');
+      });
+
+      // =========================================================================
+      // FLUXO DE AUTENTICAÇÃO (LOGIN / CADASTRO / LOGOUT / DEMO)
+      // =========================================================================
+      let isRegistering = false;
+
+      const tabLoginBtn = document.getElementById('tabLoginBtn');
+      const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+      const nameFieldContainer = document.getElementById('nameFieldContainer');
+      const authSubmitText = document.getElementById('authSubmitText');
+      const authSubmitSpinner = document.getElementById('authSubmitSpinner');
+      const authErrorMsg = document.getElementById('authErrorMsg');
+
+      function setAuthMode(mode) {
+        isRegistering = (mode === 'register');
+        authErrorMsg.classList.add('hidden');
+
+        if (isRegistering) {
+          tabRegisterBtn.className = 'flex-1 py-2 text-sm font-semibold rounded-lg transition-all bg-emerald-600 text-white shadow';
+          tabLoginBtn.className = 'flex-1 py-2 text-sm font-semibold rounded-lg transition-all text-slate-400 hover:text-white';
+          nameFieldContainer.classList.remove('hidden');
+          authSubmitText.textContent = 'Criar Minha Conta';
+        } else {
+          tabLoginBtn.className = 'flex-1 py-2 text-sm font-semibold rounded-lg transition-all bg-emerald-600 text-white shadow';
+          tabRegisterBtn.className = 'flex-1 py-2 text-sm font-semibold rounded-lg transition-all text-slate-400 hover:text-white';
+          nameFieldContainer.classList.add('hidden');
+          authSubmitText.textContent = 'Entrar na Conta';
+        }
+      }
+
+      tabLoginBtn.addEventListener('click', () => setAuthMode('login'));
+      tabRegisterBtn.addEventListener('click', () => setAuthMode('register'));
+
+      document.getElementById('togglePasswordBtn').addEventListener('click', () => {
+        const pwd = document.getElementById('authPassword');
+        pwd.type = pwd.type === 'password' ? 'text' : 'password';
+      });
+
+      document.getElementById('authForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        const name = document.getElementById('authName').value.trim();
+
+        authErrorMsg.classList.add('hidden');
+        authSubmitSpinner.classList.remove('hidden');
+        authSubmitText.textContent = isRegistering ? 'Criando conta...' : 'Autenticando...';
+
+        try {
+          if (isRegistering) {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            if (name && userCredential.user) {
+              await updateProfile(userCredential.user, { displayName: name });
+            }
+            showToast('Conta criada com sucesso!');
+          } else {
+            await signInWithEmailAndPassword(auth, email, password);
+            showToast('Login realizado com sucesso!');
+          }
+        } catch (err) {
+          console.error('Erro de autenticação:', err);
+          let friendlyMsg = 'Falha na autenticação. Verifique seus dados.';
+          if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+            friendlyMsg = 'E-mail ou senha incorretos.';
+          } else if (err.code === 'auth/email-already-in-use') {
+            friendlyMsg = 'Este e-mail já está em uso.';
+          } else if (err.code === 'auth/weak-password') {
+            friendlyMsg = 'A senha deve conter ao menos 6 caracteres.';
+          } else if (err.code === 'auth/invalid-email') {
+            friendlyMsg = 'E-mail inválido.';
+          }
+          authErrorMsg.textContent = friendlyMsg;
+          authErrorMsg.classList.remove('hidden');
+        } finally {
+          authSubmitSpinner.classList.add('hidden');
+          authSubmitText.textContent = isRegistering ? 'Criar Minha Conta' : 'Entrar na Conta';
+        }
+      });
+
+      document.getElementById('btnDemoMode').addEventListener('click', () => {
+        state.isDemoMode = true;
+        state.user = {
+          uid: 'demo-user-123',
+          email: 'usuario.demo@financaspro.com',
+          displayName: 'Usuário Demonstração'
+        };
+        showToast('Modo Demonstração ativado!', 'info');
+        switchScreens(true);
+        loadProfile();
+        setupDataListeners();
+      });
+
+      document.getElementById('btnLogout').addEventListener('click', async () => {
+        if (state.isDemoMode) {
+          state.isDemoMode = false;
+          state.user = null;
+          showToast('Desconectado.');
+          switchScreens(false);
+          return;
+        }
+
+        try {
+          await signOut(auth);
+          showToast('Você saiu com segurança.');
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      function switchScreens(isAuthenticated) {
+        document.getElementById('initialLoader').classList.add('hidden');
+
+        if (isAuthenticated) {
+          document.getElementById('authScreen').classList.add('hidden');
+          document.getElementById('dashboardScreen').classList.remove('hidden');
+          
+          document.getElementById('userEmailDisplay').textContent = 
+            state.user.displayName ? `${state.user.displayName} (${state.user.email})` : state.user.email;
+          
+          const connBadge = document.getElementById('connectionBadge');
+          const banner = document.getElementById('demoNoticeBanner');
+
+          if (state.isDemoMode) {
+            connBadge.textContent = 'Modo Demo';
+            connBadge.className = 'text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20';
+            banner.classList.remove('hidden');
+          } else {
+            connBadge.textContent = 'Firebase Conectado';
+            connBadge.className = 'text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+            banner.classList.add('hidden');
+          }
+
+          lucide.createIcons();
+        } else {
+          document.getElementById('dashboardScreen').classList.add('hidden');
+          document.getElementById('authScreen').classList.remove('hidden');
+          lucide.createIcons();
+        }
+      }
+
+      // Observer de Autenticação Firebase
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          state.user = user;
+          state.isDemoMode = false;
+          switchScreens(true);
+          loadProfile();
+          setupDataListeners();
+        } else {
+          if (!state.isDemoMode) {
+            state.user = null;
+            switchScreens(false);
+          }
+        }
+      });
+
+      // Inicializa ícones Lucide
+      lucide.createIcons();
+    </script>
+  </body>
+</html>
